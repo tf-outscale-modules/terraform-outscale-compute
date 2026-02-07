@@ -30,6 +30,23 @@ find . -type f -name ".terraform.lock.hcl" -prune -exec rm -rf {} \;
 find . -type f -name "terraform.tfstate*" -prune -exec rm -rf {} \;
 '''
 
+[tasks."test:examples"]
+description = "Init and validate all examples"
+run = '''
+for dir in examples/*/; do
+  echo "==> Validating $dir"
+  tofu -chdir="$dir" init -upgrade -backend=false
+  tofu -chdir="$dir" validate
+done
+'''
+
+[tasks."test:complete"]
+description = "Init and validate the complete example with the example SSH key"
+run = '''
+tofu -chdir=examples/complete init -upgrade -backend=false
+tofu -chdir=examples/complete validate -var "ssh_public_key=$(cat examples/complete/example_key.pub)"
+'''
+
 [tasks.changelog]
 description = "Update CHANGELOG.md (fetches all tags first)"
 run = '''
