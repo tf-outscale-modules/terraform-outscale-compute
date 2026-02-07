@@ -191,6 +191,8 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [outscale_flexible_gpu.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/flexible_gpu) | resource |
+| [outscale_flexible_gpu_link.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/flexible_gpu_link) | resource |
 | [outscale_keypair.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/keypair) | resource |
 | [outscale_public_ip.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/public_ip) | resource |
 | [outscale_public_ip_link.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/public_ip_link) | resource |
@@ -204,9 +206,11 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_enable_flexible_gpus"></a> [enable\_flexible\_gpus](#input\_enable\_flexible\_gpus) | Enable creation of flexible GPUs defined in the flexible\_gpus variable | `bool` | `false` | no |
 | <a name="input_enable_keypair"></a> [enable\_keypair](#input\_enable\_keypair) | Enable creation of an SSH keypair | `bool` | `false` | no |
 | <a name="input_enable_security_groups"></a> [enable\_security\_groups](#input\_enable\_security\_groups) | Enable creation of security groups defined in the security\_groups variable | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment (dev, staging, or prod) | `string` | n/a | yes |
+| <a name="input_flexible_gpus"></a> [flexible\_gpus](#input\_flexible\_gpus) | Map of flexible GPU definitions. Each key is a GPU config name with model, generation, and target VM role. One GPU is created per VM instance in the specified role | <pre>map(object({<br/>    model_name            = string<br/>    generation            = optional(string)<br/>    delete_on_vm_deletion = optional(bool, true)<br/>    vm_role               = string<br/>    tags                  = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_keypair_name"></a> [keypair\_name](#input\_keypair\_name) | Name for the SSH keypair (required when enable\_keypair is true) | `string` | `null` | no |
 | <a name="input_keypair_public_key"></a> [keypair\_public\_key](#input\_keypair\_public\_key) | Public key material for the SSH keypair. Provide via environment variable or tfvars, never hardcode | `string` | `null` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name used for resource naming and tagging. Must be lowercase alphanumeric with hyphens only | `string` | n/a | yes |
@@ -218,6 +222,8 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_flexible_gpu_details"></a> [flexible\_gpu\_details](#output\_flexible\_gpu\_details) | Map of flexible GPU details keyed by compound key (gpu\_key:vm\_key) |
+| <a name="output_flexible_gpu_ids"></a> [flexible\_gpu\_ids](#output\_flexible\_gpu\_ids) | Map of flexible GPU IDs keyed by compound key (gpu\_key:vm\_key) |
 | <a name="output_keypair_fingerprint"></a> [keypair\_fingerprint](#output\_keypair\_fingerprint) | Fingerprint of the created keypair (null if keypair creation is disabled) |
 | <a name="output_keypair_id"></a> [keypair\_id](#output\_keypair\_id) | ID of the created keypair (null if keypair creation is disabled) |
 | <a name="output_keypair_name"></a> [keypair\_name](#output\_keypair\_name) | Name of the created keypair (null if keypair creation is disabled) |
