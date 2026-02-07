@@ -181,7 +181,7 @@ See [SECURITY.md](SECURITY.md) for detailed security guidance.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_outscale"></a> [outscale](#provider\_outscale) | 1.3.2 |
+| <a name="provider_outscale"></a> [outscale](#provider\_outscale) | ~> 1.0 |
 
 ## Modules
 
