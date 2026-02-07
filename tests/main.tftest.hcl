@@ -307,3 +307,180 @@ run "keypair_enabled" {
     error_message = "Keypair name mismatch"
   }
 }
+
+# Test: Environment validation rejects invalid values
+run "invalid_environment" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "invalid"
+    vms = {
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  expect_failures = [
+    var.environment,
+  ]
+}
+
+# Test: Project name validation rejects invalid values
+run "invalid_project_name" {
+  command = plan
+
+  variables {
+    project_name = "Invalid_Name!"
+    environment  = "dev"
+    vms = {
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  expect_failures = [
+    var.project_name,
+  ]
+}
+
+# Test: VM count validation rejects zero
+run "invalid_vm_count" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      web = {
+        count     = 0
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  expect_failures = [
+    var.vms,
+  ]
+}
+
+# Test: Common tags propagation
+run "tags_propagation" {
+  command = plan
+
+  variables {
+    project_name = "myapp"
+    environment  = "prod"
+    tags = {
+      Team = "platform"
+    }
+    vms = {
+      api = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+        tags = {
+          Tier = "api"
+        }
+      }
+    }
+  }
+
+  assert {
+    condition     = local.vm_instances["api-0"].tags["Project"] == "myapp"
+    error_message = "Project tag not propagated"
+  }
+
+  assert {
+    condition     = local.vm_instances["api-0"].tags["Environment"] == "prod"
+    error_message = "Environment tag not propagated"
+  }
+
+  assert {
+    condition     = local.vm_instances["api-0"].tags["ManagedBy"] == "terraform"
+    error_message = "ManagedBy tag not propagated"
+  }
+
+  assert {
+    condition     = local.vm_instances["api-0"].tags["Team"] == "platform"
+    error_message = "Custom tag not propagated"
+  }
+
+  assert {
+    condition     = local.vm_instances["api-0"].tags["Role"] == "api"
+    error_message = "Role tag not set"
+  }
+
+  assert {
+    condition     = local.vm_instances["api-0"].tags["Tier"] == "api"
+    error_message = "Role-specific tag not propagated"
+  }
+}
+
+# Test: Block device mappings
+run "block_device_mappings" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c2r4p1"
+        subnet_id = "subnet-12345678"
+        block_device_mappings = [
+          {
+            device_name = "/dev/sda1"
+            bsu = {
+              volume_size           = 50
+              volume_type           = "gp2"
+              delete_on_vm_deletion = true
+            }
+          },
+        ]
+      }
+    }
+  }
+
+  assert {
+    condition     = length(outscale_vm.this) == 1
+    error_message = "Expected 1 VM with block device mappings"
+  }
+}
+
+# Test: Deletion protection flag
+run "deletion_protection" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "prod"
+    vms = {
+      db = {
+        count               = 1
+        image_id            = "ami-12345678"
+        vm_type             = "tinav5.c4r8p1"
+        subnet_id           = "subnet-12345678"
+        deletion_protection = true
+      }
+    }
+  }
+
+  assert {
+    condition     = outscale_vm.this["db-0"].deletion_protection == true
+    error_message = "Deletion protection should be enabled"
+  }
+}

@@ -82,4 +82,5 @@ output "keypair_name" {
 output "keypair_fingerprint" {
   description = "Fingerprint of the created keypair (null if keypair creation is disabled)"
   value       = var.enable_keypair ? outscale_keypair.this[0].keypair_fingerprint : null
+  sensitive   = true
 }

@@ -3,8 +3,13 @@
 ########################################
 
 variable "project_name" {
-  description = "Project name used for resource naming and tagging"
+  description = "Project name used for resource naming and tagging. Must be lowercase alphanumeric with hyphens only"
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{0,62}$", var.project_name))
+    error_message = "Project name must start with a letter, contain only lowercase letters, digits, and hyphens, and be 1-63 characters."
+  }
 }
 
 variable "environment" {
@@ -52,6 +57,11 @@ variable "vms" {
     })), {})
     tags = optional(map(string), {})
   }))
+
+  validation {
+    condition     = alltrue([for role, cfg in var.vms : cfg.count >= 1])
+    error_message = "VM count must be at least 1 for each role."
+  }
 }
 
 ########################################

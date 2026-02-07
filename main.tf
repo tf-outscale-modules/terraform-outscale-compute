@@ -47,6 +47,13 @@ resource "outscale_keypair" "this" {
 
   keypair_name = var.keypair_name != null ? var.keypair_name : "${var.project_name}-${var.environment}-keypair"
   public_key   = var.keypair_public_key
+
+  lifecycle {
+    precondition {
+      condition     = var.keypair_public_key != null
+      error_message = "keypair_public_key is required when enable_keypair is true."
+    }
+  }
 }
 
 ########################################
@@ -81,11 +88,6 @@ resource "outscale_vm" "this" {
         delete_on_vm_deletion = block_device_mappings.value.bsu.delete_on_vm_deletion
       }
     }
-  }
-
-  tags {
-    key   = "Name"
-    value = each.value.name
   }
 
   dynamic "tags" {

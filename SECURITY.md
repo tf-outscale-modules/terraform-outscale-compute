@@ -27,9 +27,24 @@
 - Restrict access to state storage using IAM policies
 - Never commit `.tfstate` or `.tfstate.backup` files to version control
 
+## Outscale API Credentials
+
+- Set `OSC_ACCESS_KEY` and `OSC_SECRET_KEY` as environment variables — never in `.tf` files
+- In CI/CD, use masked and protected variables for Outscale API credentials
+- Rotate access keys regularly (at least every 90 days)
+- Use separate access keys per environment (dev/staging/prod) with least-privilege IAM policies
+- The `outscale` provider reads credentials from environment variables by default — no configuration needed in code
+
 ## Secrets Management
 
 - Use `mise.local.toml` (gitignored) for local API credentials
 - In CI/CD, use protected variables for Outscale access keys
 - Consider using a secrets manager (HashiCorp Vault, SOPS) for production credentials
 - The `.gitignore` excludes `*.key`, `*.pem`, and `secrets.auto.tfvars` by default
+
+## Input Validation
+
+- `project_name` is validated to only allow lowercase alphanumeric characters and hyphens
+- `environment` is restricted to `dev`, `staging`, or `prod`
+- VM `count` must be at least 1 per role
+- `keypair_public_key` is enforced as required when `enable_keypair` is true (via lifecycle precondition)

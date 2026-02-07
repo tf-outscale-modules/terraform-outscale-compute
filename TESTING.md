@@ -8,13 +8,13 @@ This module uses Terraform's native test framework (`.tftest.hcl` files) for val
 
 ```bash
 # Initialize the module
-terraform init
+tofu init
 
 # Run all tests (plan-mode, no real resources created)
-terraform test
+tofu test
 
 # Run with verbose output
-terraform test -verbose
+tofu test -verbose
 ```
 
 ## What's Tested
@@ -30,6 +30,12 @@ terraform test -verbose
 | `naming_convention` | Names follow `{project}-{env}-{role}-{index}` pattern |
 | `keypair_disabled` | No keypair when `enable_keypair = false` |
 | `keypair_enabled` | Keypair created with correct name when enabled |
+| `invalid_environment` | Rejects invalid environment values |
+| `invalid_project_name` | Rejects project names with invalid characters |
+| `invalid_vm_count` | Rejects VM count of 0 |
+| `tags_propagation` | Verifies common, custom, and role tags are all merged |
+| `block_device_mappings` | Exercises block device mapping configuration |
+| `deletion_protection` | Verifies deletion protection flag is passed through |
 
 ## CI Integration
 
@@ -44,6 +50,6 @@ Tests run automatically in the GitLab CI pipeline:
 Both examples are validated in CI:
 
 ```bash
-cd examples/basic && terraform init && terraform validate
-cd examples/complete && terraform init && terraform validate
+cd examples/basic && tofu init && tofu validate
+cd examples/complete && tofu init && tofu validate
 ```
