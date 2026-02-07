@@ -84,7 +84,7 @@ module "compute" {
   # VMs
   vms = {
     frontend = {
-      count                    = 3
+      count                    = 2
       image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
       vm_type                  = "tinav5.c2r4p1"
       subnet_id                = module.networking.subnet_ids["frontend"]
@@ -107,7 +107,7 @@ module "compute" {
       }
     }
     backend = {
-      count                    = 2
+      count                    = 1
       image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
       vm_type                  = "tinav5.c4r8p1"
       subnet_id                = module.networking.subnet_ids["backend"]
