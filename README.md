@@ -1,93 +1,270 @@
-# Outscale Compute
+# Outscale Compute Terraform Module
 
+[![Apache 2.0][apache-shield]][apache]
+[![Terraform][terraform-badge]][terraform-url]
+[![Outscale Provider][provider-badge]][provider-url]
+[![Latest Release][release-badge]][release-url]
 
+Terraform module for provisioning and managing Outscale cloud virtual machines with role-based definitions, security groups, volumes, public IPs, and SSH keypairs.
 
-## Getting started
+## Features
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- **Role-based VM map** — define roles (e.g., `frontend`, `backend`) with counts; the module flattens them into individual instances with stable `for_each` keys
+- **Security groups** — optionally create security groups with inbound/outbound rules, referenced by key from VM definitions
+- **Block storage volumes** — attach additional volumes per VM role with automatic subregion derivation
+- **Public IPs** — per-role toggle for elastic IP allocation and association
+- **SSH keypair** — optional keypair creation with sensitive public key handling
+- **Flexible GPUs** — allocate and attach Outscale fGPUs to VMs by role, with auto-distribution across instances
+- **Consistent naming** — all resources follow `{project}-{environment}-{role}-{index}` pattern
+- **Flexible tagging** — common tags merged with role-specific and resource-specific tags
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Requirements
 
-## Add your files
-
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/leminnov/terraform/modules/outscale-compute.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-* [Set up project integrations](https://gitlab.com/leminnov/terraform/modules/outscale-compute/-/settings/integrations)
-
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+| Name | Version |
+|------|---------|
+| terraform | >= 1.5 |
+| outscale | ~> 1.0 |
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Basic Example
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```hcl
+module "compute" {
+  source = "git::https://gitlab.com/leminnov/terraform/modules/outscale-compute.git?ref=v0.1.0"
+
+  project_name = "myproject"
+  environment  = "dev"
+
+  vms = {
+    web = {
+      count     = 1
+      image_id  = "ami-12345678"
+      vm_type   = "tinav5.c1r1p1"
+      subnet_id = "subnet-12345678"
+    }
+  }
+}
+```
+
+### Complete Example
+
+```hcl
+module "compute" {
+  source = "git::https://gitlab.com/leminnov/terraform/modules/outscale-compute.git?ref=v0.1.0"
+
+  project_name = "myproject"
+  environment  = "prod"
+
+  tags = {
+    Team  = "platform"
+    Owner = "infra@example.com"
+  }
+
+  enable_keypair     = true
+  keypair_name       = "myproject-prod-keypair"
+  keypair_public_key = var.ssh_public_key
+
+  enable_security_groups = true
+  security_groups = {
+    web = {
+      description = "Web traffic"
+      net_id      = module.networking.net_id
+      inbound_rules = [
+        {
+          from_port_range = 443
+          to_port_range   = 443
+          ip_protocol     = "tcp"
+          ip_range        = "0.0.0.0/0"
+        },
+      ]
+      outbound_rules = [
+        {
+          from_port_range = 0
+          to_port_range   = 0
+          ip_protocol     = "-1"
+          ip_range        = "0.0.0.0/0"
+        },
+      ]
+    }
+  }
+
+  vms = {
+    frontend = {
+      count                    = 3
+      image_id                 = "ami-12345678"
+      vm_type                  = "tinav5.c2r4p1"
+      subnet_id                = module.networking.subnet_ids["frontend"]
+      keypair_name             = "myproject-prod-keypair"
+      security_group_keys      = ["web"]
+      placement_subregion_name = "eu-west-2a"
+      enable_public_ip         = true
+    }
+    backend = {
+      count                    = 2
+      image_id                 = "ami-12345678"
+      vm_type                  = "tinav5.c4r8p1"
+      subnet_id                = module.networking.subnet_ids["backend"]
+      keypair_name             = "myproject-prod-keypair"
+      placement_subregion_name = "eu-west-2a"
+      volumes = {
+        data = {
+          size        = 200
+          type        = "io1"
+          iops        = 3000
+          device_name = "/dev/xvdb"
+        }
+      }
+    }
+  }
+}
+```
+
+### Conditional Creation
+
+```hcl
+# Security groups are only created when explicitly enabled
+enable_security_groups = true   # default: false
+
+# Keypair is only created when explicitly enabled
+enable_keypair = true           # default: false
+
+# Public IPs are per-role
+vms = {
+  public_role  = { enable_public_ip = true,  ... }
+  private_role = { enable_public_ip = false, ... }  # default
+}
+```
+
+### Flexible GPUs
+
+```hcl
+# Attach one nvidia-p100 GPU to each backend VM
+enable_flexible_gpus = true
+flexible_gpus = {
+  compute = {
+    model_name            = "nvidia-p100"
+    generation            = "v5"
+    delete_on_vm_deletion = true
+    vm_role               = "backend"  # must match a key in vms
+  }
+}
+```
+
+> **Note:** Attaching/detaching GPUs stops and restarts the VM. Max 2 identical GPU models per VM.
+
+## Security Considerations
+
+1. SSH keypair public keys are marked as `sensitive` — provide via `TF_VAR_keypair_public_key` or encrypted tfvars
+2. Security groups default to no rules — you must explicitly define inbound/outbound rules
+3. State files contain sensitive data — always use encrypted remote backends
+4. Never use `0.0.0.0/0` for SSH access in production security group rules
+
+See [SECURITY.md](SECURITY.md) for detailed security guidance.
+
+## Known Limitations
+
+1. The Outscale provider does not support `deletion_protection` as a first-class attribute on all resource types
+2. Volume IOPS configuration is only effective for `io1` volume types
+3. Security group rules with multiple IP ranges require separate rule entries
+4. Public IP association requires the VM to be in a running state
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5 |
+| <a name="requirement_outscale"></a> [outscale](#requirement\_outscale) | ~> 1.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_outscale"></a> [outscale](#provider\_outscale) | 1.3.2 |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [outscale_keypair.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/keypair) | resource |
+| [outscale_public_ip.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/public_ip) | resource |
+| [outscale_public_ip_link.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/public_ip_link) | resource |
+| [outscale_security_group.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/security_group) | resource |
+| [outscale_security_group_rule.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/security_group_rule) | resource |
+| [outscale_vm.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/vm) | resource |
+| [outscale_volume.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/volume) | resource |
+| [outscale_volume_link.this](https://registry.terraform.io/providers/outscale/outscale/latest/docs/resources/volume_link) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_enable_keypair"></a> [enable\_keypair](#input\_enable\_keypair) | Enable creation of an SSH keypair | `bool` | `false` | no |
+| <a name="input_enable_security_groups"></a> [enable\_security\_groups](#input\_enable\_security\_groups) | Enable creation of security groups defined in the security\_groups variable | `bool` | `false` | no |
+| <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment (dev, staging, or prod) | `string` | n/a | yes |
+| <a name="input_keypair_name"></a> [keypair\_name](#input\_keypair\_name) | Name for the SSH keypair (required when enable\_keypair is true) | `string` | `null` | no |
+| <a name="input_keypair_public_key"></a> [keypair\_public\_key](#input\_keypair\_public\_key) | Public key material for the SSH keypair. Provide via environment variable or tfvars, never hardcode | `string` | `null` | no |
+| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name used for resource naming and tagging. Must be lowercase alphanumeric with hyphens only | `string` | n/a | yes |
+| <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | Map of security groups to create when enable\_security\_groups is true. Keys are referenced by security\_group\_keys in VM definitions | <pre>map(object({<br/>    description = string<br/>    net_id      = string<br/>    inbound_rules = optional(list(object({<br/>      from_port_range                   = number<br/>      to_port_range                     = number<br/>      ip_protocol                       = string<br/>      ip_range                          = optional(string)<br/>      security_group_account_id_to_link = optional(string)<br/>      security_group_name_to_link       = optional(string)<br/>    })), [])<br/>    outbound_rules = optional(list(object({<br/>      from_port_range                   = number<br/>      to_port_range                     = number<br/>      ip_protocol                       = string<br/>      ip_range                          = optional(string)<br/>      security_group_account_id_to_link = optional(string)<br/>      security_group_name_to_link       = optional(string)<br/>    })), [])<br/>    tags = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Additional tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_vms"></a> [vms](#input\_vms) | Map of VM role definitions. Each key is a role name (e.g., 'frontend', 'backend') with its configuration including count, image, type, networking, and optional volumes | <pre>map(object({<br/>    count                    = number<br/>    image_id                 = string<br/>    vm_type                  = string<br/>    subnet_id                = string<br/>    keypair_name             = optional(string)<br/>    security_group_ids       = optional(list(string), [])<br/>    security_group_keys      = optional(list(string), [])<br/>    placement_subregion_name = optional(string)<br/>    enable_public_ip         = optional(bool, false)<br/>    deletion_protection      = optional(bool, false)<br/>    user_data                = optional(string)<br/>    block_device_mappings = optional(list(object({<br/>      device_name = string<br/>      bsu = object({<br/>        volume_size           = number<br/>        volume_type           = optional(string, "gp2")<br/>        iops                  = optional(number)<br/>        snapshot_id           = optional(string)<br/>        delete_on_vm_deletion = optional(bool, true)<br/>      })<br/>    })), [])<br/>    volumes = optional(map(object({<br/>      size           = number<br/>      type           = optional(string, "gp2")<br/>      iops           = optional(number)<br/>      snapshot_id    = optional(string)<br/>      device_name    = string<br/>      subregion_name = optional(string)<br/>      tags           = optional(map(string), {})<br/>    })), {})<br/>    tags = optional(map(string), {})<br/>  }))</pre> | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_keypair_fingerprint"></a> [keypair\_fingerprint](#output\_keypair\_fingerprint) | Fingerprint of the created keypair (null if keypair creation is disabled) |
+| <a name="output_keypair_id"></a> [keypair\_id](#output\_keypair\_id) | ID of the created keypair (null if keypair creation is disabled) |
+| <a name="output_keypair_name"></a> [keypair\_name](#output\_keypair\_name) | Name of the created keypair (null if keypair creation is disabled) |
+| <a name="output_public_ip_ids"></a> [public\_ip\_ids](#output\_public\_ip\_ids) | Map of public IP allocation IDs keyed by VM key |
+| <a name="output_public_ips"></a> [public\_ips](#output\_public\_ips) | Map of public IP addresses keyed by VM key |
+| <a name="output_security_group_ids"></a> [security\_group\_ids](#output\_security\_group\_ids) | Map of security group IDs keyed by security group name |
+| <a name="output_vm_details"></a> [vm\_details](#output\_vm\_details) | Map of VM details including ID, private IP, public IP, state, and type |
+| <a name="output_vm_ids"></a> [vm\_ids](#output\_vm\_ids) | Map of VM IDs keyed by flattened VM key (role-index) |
+| <a name="output_vm_private_ips"></a> [vm\_private\_ips](#output\_vm\_private\_ips) | Map of VM private IPs keyed by flattened VM key |
+| <a name="output_vm_public_ips"></a> [vm\_public\_ips](#output\_vm\_public\_ips) | Map of VM public IPs keyed by flattened VM key (empty string if no public IP) |
+| <a name="output_volume_ids"></a> [volume\_ids](#output\_volume\_ids) | Map of volume IDs keyed by compound key (vm\_key:vol\_key) |
+| <a name="output_volume_link_states"></a> [volume\_link\_states](#output\_volume\_link\_states) | Map of volume link states keyed by compound key (vm\_key:vol\_key) |
+<!-- END_TF_DOCS -->
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](README.md) | Module overview and usage |
+| [SECURITY.md](SECURITY.md) | Security considerations and best practices |
+| [TESTING.md](TESTING.md) | Test execution and CI integration |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+1. Create a feature branch from `develop`
+2. Make your changes following the existing code style
+3. Ensure all pre-commit hooks pass: `pre-commit run -a`
+4. Run validation: `terraform fmt -check -recursive && terraform validate`
+5. Submit a merge request
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+This module is provided "as is", without warranty of any kind, express or implied. Use at your own risk.
+
+[apache]: https://opensource.org/licenses/Apache-2.0
+[apache-shield]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
+
+[terraform-badge]: https://img.shields.io/badge/Terraform-%3E%3D1.5-623CE4
+[terraform-url]: https://www.terraform.io
+
+[provider-badge]: https://img.shields.io/badge/Outscale%20Provider-~%3E1.0-blueviolet
+[provider-url]: https://registry.terraform.io/providers/outscale/outscale/latest
+
+[release-badge]: https://img.shields.io/gitlab/v/release/leminnov/terraform/modules/outscale-compute?include_prereleases&sort=semver
+[release-url]: https://gitlab.com/leminnov/terraform/modules/outscale-compute/-/releases
