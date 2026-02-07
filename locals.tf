@@ -103,4 +103,32 @@ locals {
     for vm_key, vm in local.vm_instances : vm_key => vm
     if vm.enable_public_ip
   }
+
+  # Flatten flexible GPUs: { "compute:backend-0" => {...}, "compute:backend-1" => {...} }
+  fgpu_instances = var.enable_flexible_gpus ? merge([
+    for gpu_key, gpu in var.flexible_gpus : {
+      for vm_key, vm in local.vm_instances : "${gpu_key}:${vm_key}" => {
+        gpu_key               = gpu_key
+        vm_key                = vm_key
+        model_name            = gpu.model_name
+        generation            = gpu.generation
+        delete_on_vm_deletion = gpu.delete_on_vm_deletion
+        subregion_name        = vm.placement_subregion_name
+        tags = merge(
+          local.common_tags,
+          {
+            Name = "${vm.name}-fgpu-${gpu_key}"
+            Role = vm.role
+          },
+          gpu.tags,
+        )
+      } if vm.role == gpu.vm_role
+    }
+  ]...) : {}
+
+  # Group GPU IDs by VM key for link resources: { "backend-0" => ["compute:backend-0", ...] }
+  fgpu_vm_links = var.enable_flexible_gpus ? {
+    for vm_key in distinct([for k, v in local.fgpu_instances : v.vm_key]) :
+    vm_key => [for k, v in local.fgpu_instances : k if v.vm_key == vm_key]
+  } : {}
 }

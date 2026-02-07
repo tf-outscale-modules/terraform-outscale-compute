@@ -6,19 +6,24 @@ provider "outscale" {
 module "networking" {
   source = "github.com/tf-outscale-modules/terraform-outscale-networking?ref=v1.0.0"
 
-  project_name = "myproject"
-  environment  = "prod"
+  ip_range = "10.0.0.0/16"
 
-  net_cidr_block = "10.0.0.0/16"
   subnets = {
     frontend = {
-      cidr_block     = "10.0.1.0/24"
+      ip_range       = "10.0.1.0/24"
       subregion_name = "eu-west-2a"
     }
     backend = {
-      cidr_block     = "10.0.2.0/24"
+      ip_range       = "10.0.2.0/24"
       subregion_name = "eu-west-2a"
     }
+  }
+
+  enable_internet_service = true
+
+  tags = {
+    Project     = "myproject"
+    Environment = "prod"
   }
 }
 
@@ -59,14 +64,8 @@ module "compute" {
           ip_range        = "0.0.0.0/0"
         },
       ]
-      outbound_rules = [
-        {
-          from_port_range = 0
-          to_port_range   = 0
-          ip_protocol     = "-1"
-          ip_range        = "0.0.0.0/0"
-        },
-      ]
+      # Note: Outscale auto-creates a default outbound allow-all rule on new SGs,
+      # so explicit outbound_rules are only needed for restrictive policies.
     }
     backend = {
       description = "Backend security group - app traffic"
@@ -79,14 +78,6 @@ module "compute" {
           ip_range        = "10.0.1.0/24"
         },
       ]
-      outbound_rules = [
-        {
-          from_port_range = 0
-          to_port_range   = 0
-          ip_protocol     = "-1"
-          ip_range        = "0.0.0.0/0"
-        },
-      ]
     }
   }
 
@@ -94,7 +85,7 @@ module "compute" {
   vms = {
     frontend = {
       count                    = 3
-      image_id                 = "ami-12345678"
+      image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
       vm_type                  = "tinav5.c2r4p1"
       subnet_id                = module.networking.subnet_ids["frontend"]
       keypair_name             = "myproject-prod-keypair"
@@ -117,7 +108,7 @@ module "compute" {
     }
     backend = {
       count                    = 2
-      image_id                 = "ami-12345678"
+      image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
       vm_type                  = "tinav5.c4r8p1"
       subnet_id                = module.networking.subnet_ids["backend"]
       keypair_name             = "myproject-prod-keypair"
@@ -155,6 +146,17 @@ module "compute" {
       tags = {
         Tier = "backend"
       }
+    }
+  }
+
+  # Flexible GPUs
+  enable_flexible_gpus = true
+  flexible_gpus = {
+    compute = {
+      model_name            = "nvidia-p100"
+      generation            = "v5"
+      delete_on_vm_deletion = true
+      vm_role               = "backend"
     }
   }
 }

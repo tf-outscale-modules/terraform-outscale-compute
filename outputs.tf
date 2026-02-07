@@ -84,3 +84,24 @@ output "keypair_fingerprint" {
   value       = var.enable_keypair ? outscale_keypair.this[0].keypair_fingerprint : null
   sensitive   = true
 }
+
+########################################
+# Flexible GPU outputs
+########################################
+
+output "flexible_gpu_ids" {
+  description = "Map of flexible GPU IDs keyed by compound key (gpu_key:vm_key)"
+  value       = { for k, v in outscale_flexible_gpu.this : k => v.flexible_gpu_id }
+}
+
+output "flexible_gpu_details" {
+  description = "Map of flexible GPU details keyed by compound key (gpu_key:vm_key)"
+  value = { for k, v in outscale_flexible_gpu.this : k => {
+    flexible_gpu_id       = v.flexible_gpu_id
+    model_name            = v.model_name
+    state                 = v.state
+    subregion_name        = v.subregion_name
+    vm_id                 = v.vm_id
+    delete_on_vm_deletion = v.delete_on_vm_deletion
+  } }
+}

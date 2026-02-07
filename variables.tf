@@ -124,3 +124,26 @@ variable "keypair_public_key" {
   sensitive   = true
   default     = null
 }
+
+variable "enable_flexible_gpus" {
+  description = "Enable creation of flexible GPUs defined in the flexible_gpus variable"
+  type        = bool
+  default     = false
+}
+
+variable "flexible_gpus" {
+  description = "Map of flexible GPU definitions. Each key is a GPU config name with model, generation, and target VM role. One GPU is created per VM instance in the specified role"
+  type = map(object({
+    model_name            = string
+    generation            = optional(string)
+    delete_on_vm_deletion = optional(bool, true)
+    vm_role               = string
+    tags                  = optional(map(string), {})
+  }))
+  default = {}
+
+  validation {
+    condition     = alltrue([for k, v in var.flexible_gpus : contains(keys(var.vms), v.vm_role)])
+    error_message = "Each flexible GPU's vm_role must reference a valid key in the vms variable."
+  }
+}

@@ -461,6 +461,151 @@ run "block_device_mappings" {
   }
 }
 
+# Test: Flexible GPUs disabled by default
+run "flexible_gpus_disabled" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  assert {
+    condition     = length(outscale_flexible_gpu.this) == 0
+    error_message = "Expected no flexible GPUs when disabled"
+  }
+}
+
+# Test: Flexible GPUs enabled with role targeting
+run "flexible_gpus_enabled" {
+  command = plan
+
+  variables {
+    project_name         = "testproject"
+    environment          = "dev"
+    enable_flexible_gpus = true
+    flexible_gpus = {
+      compute = {
+        model_name            = "nvidia-p100"
+        generation            = "v5"
+        delete_on_vm_deletion = true
+        vm_role               = "backend"
+      }
+    }
+    vms = {
+      backend = {
+        count                    = 2
+        image_id                 = "ami-12345678"
+        vm_type                  = "tinav5.c4r8p1"
+        subnet_id                = "subnet-12345678"
+        placement_subregion_name = "eu-west-2a"
+      }
+      frontend = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  assert {
+    condition     = length(outscale_flexible_gpu.this) == 2
+    error_message = "Expected 2 flexible GPUs (1 per backend VM)"
+  }
+
+  assert {
+    condition     = length(outscale_flexible_gpu_link.this) == 2
+    error_message = "Expected 2 flexible GPU links (1 per backend VM)"
+  }
+
+  assert {
+    condition     = outscale_flexible_gpu.this["compute:backend-0"].model_name == "nvidia-p100"
+    error_message = "GPU model_name mismatch"
+  }
+}
+
+# Test: Multiple GPU models targeting same role
+run "flexible_gpus_multi_model" {
+  command = plan
+
+  variables {
+    project_name         = "testproject"
+    environment          = "dev"
+    enable_flexible_gpus = true
+    flexible_gpus = {
+      compute = {
+        model_name            = "nvidia-p100"
+        generation            = "v5"
+        delete_on_vm_deletion = true
+        vm_role               = "gpu"
+      }
+      render = {
+        model_name            = "nvidia-p100"
+        generation            = "v5"
+        delete_on_vm_deletion = true
+        vm_role               = "gpu"
+      }
+    }
+    vms = {
+      gpu = {
+        count                    = 1
+        image_id                 = "ami-12345678"
+        vm_type                  = "tinav5.c4r8p1"
+        subnet_id                = "subnet-12345678"
+        placement_subregion_name = "eu-west-2a"
+      }
+    }
+  }
+
+  assert {
+    condition     = length(outscale_flexible_gpu.this) == 2
+    error_message = "Expected 2 flexible GPUs (2 configs x 1 VM)"
+  }
+
+  assert {
+    condition     = length(outscale_flexible_gpu_link.this) == 1
+    error_message = "Expected 1 flexible GPU link (1 VM with 2 GPUs)"
+  }
+}
+
+# Test: Flexible GPU validation rejects invalid vm_role
+run "flexible_gpus_invalid_role" {
+  command = plan
+
+  variables {
+    project_name         = "testproject"
+    environment          = "dev"
+    enable_flexible_gpus = true
+    flexible_gpus = {
+      compute = {
+        model_name = "nvidia-p100"
+        vm_role    = "nonexistent"
+      }
+    }
+    vms = {
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  expect_failures = [
+    var.flexible_gpus,
+  ]
+}
+
 # Test: Deletion protection flag
 run "deletion_protection" {
   command = plan

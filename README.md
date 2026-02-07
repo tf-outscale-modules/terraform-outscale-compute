@@ -14,6 +14,7 @@ Terraform module for provisioning and managing Outscale cloud virtual machines w
 - **Block storage volumes** — attach additional volumes per VM role with automatic subregion derivation
 - **Public IPs** — per-role toggle for elastic IP allocation and association
 - **SSH keypair** — optional keypair creation with sensitive public key handling
+- **Flexible GPUs** — allocate and attach Outscale fGPUs to VMs by role, with auto-distribution across instances
 - **Consistent naming** — all resources follow `{project}-{environment}-{role}-{index}` pattern
 - **Flexible tagging** — common tags merged with role-specific and resource-specific tags
 
@@ -134,6 +135,23 @@ vms = {
   private_role = { enable_public_ip = false, ... }  # default
 }
 ```
+
+### Flexible GPUs
+
+```hcl
+# Attach one nvidia-p100 GPU to each backend VM
+enable_flexible_gpus = true
+flexible_gpus = {
+  compute = {
+    model_name            = "nvidia-p100"
+    generation            = "v5"
+    delete_on_vm_deletion = true
+    vm_role               = "backend"  # must match a key in vms
+  }
+}
+```
+
+> **Note:** Attaching/detaching GPUs stops and restarts the VM. Max 2 identical GPU models per VM.
 
 ## Security Considerations
 

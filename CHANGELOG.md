@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Flexible GPU support: allocate and attach Outscale fGPUs to VMs by role
+- `enable_flexible_gpus` and `flexible_gpus` variables
+- `flexible_gpu_ids` and `flexible_gpu_details` outputs
+- Flexible GPU tests (disabled, enabled, multi-model, validation)
+
 ## [0.1.0] - 2026-02-07
 
 - Initial release

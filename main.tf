@@ -156,3 +156,26 @@ resource "outscale_public_ip_link" "this" {
   public_ip_id = outscale_public_ip.this[each.key].public_ip_id
   vm_id        = outscale_vm.this[each.key].vm_id
 }
+
+########################################
+# Flexible GPUs
+########################################
+
+resource "outscale_flexible_gpu" "this" {
+  for_each = local.fgpu_instances
+
+  model_name            = each.value.model_name
+  generation            = each.value.generation
+  subregion_name        = each.value.subregion_name
+  delete_on_vm_deletion = each.value.delete_on_vm_deletion
+}
+
+resource "outscale_flexible_gpu_link" "this" {
+  for_each = local.fgpu_vm_links
+
+  flexible_gpu_ids = [
+    for gpu_compound_key in each.value :
+    outscale_flexible_gpu.this[gpu_compound_key].flexible_gpu_id
+  ]
+  vm_id = outscale_vm.this[each.key].vm_id
+}

@@ -42,3 +42,13 @@ output "keypair_name" {
   description = "Name of the created keypair"
   value       = module.compute.keypair_name
 }
+
+output "flexible_gpu_ids" {
+  description = "Map of flexible GPU IDs"
+  value       = module.compute.flexible_gpu_ids
+}
+
+output "flexible_gpu_details" {
+  description = "Map of flexible GPU details"
+  value       = module.compute.flexible_gpu_details
+}
