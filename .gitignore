@@ -49,3 +49,7 @@ out/
 .envrc
 
 mise.local.toml
+
+examples/complete/id_ed25519
+
+examples/complete/id_ed25519.pub

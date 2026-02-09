@@ -40,6 +40,10 @@ for dir in examples/*/; do
 done
 '''
 
+[tasks.generate-ssh-key]
+description = "Generate an SSH key for the example"
+run = 'ssh-keygen -t ed25519 -f ./id_ed25519 -N ""'
+
 [tasks."test:complete"]
 description = "Init and validate the complete example with the example SSH key"
 run = '''
