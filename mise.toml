@@ -56,3 +56,15 @@ description = "Update CHANGELOG.md (fetches all tags first)"
 run = '''
 git-cliff --config .cliff.toml --output CHANGELOG.md
 '''
+
+[tasks.tofu-apply]
+description = "tofu apply"
+run = '''
+tofu apply -var "ssh_public_key=$(cat ~/ghorg/gitlab.com/leminnov/terraform/modules/outscale-compute/examples/complete/id_ed25519.pub)"
+'''
+
+[tasks.tofu-destroy]
+description = "tofu destroy"
+run = '''
+tofu destroy -var "ssh_public_key=$(cat ~/ghorg/gitlab.com/leminnov/terraform/modules/outscale-compute/examples/complete/id_ed25519.pub)"
+'''
