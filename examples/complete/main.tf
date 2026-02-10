@@ -13,7 +13,7 @@ module "networking" {
       ip_range       = "10.0.1.0/24"
       subregion_name = "eu-west-2a"
     }
-    backend = {
+    llm = {
       ip_range       = "10.0.2.0/24"
       subregion_name = "eu-west-2a"
     }
@@ -22,7 +22,7 @@ module "networking" {
   enable_internet_service = true
 
   tags = {
-    Project     = "myproject"
+    Project     = "outscale-compute"
     Environment = "prod"
   }
 }
@@ -31,7 +31,7 @@ module "networking" {
 module "compute" {
   source = "../.."
 
-  project_name = "myproject"
+  project_name = "outscale-compute"
   environment  = "prod"
 
   tags = {
@@ -41,7 +41,7 @@ module "compute" {
 
   # Keypair
   enable_keypair     = true
-  keypair_name       = "myproject-prod-keypair"
+  keypair_name       = "outscale-compute-prod-keypair"
   keypair_public_key = var.ssh_public_key
 
   # Security groups
@@ -67,8 +67,8 @@ module "compute" {
       # Note: Outscale auto-creates a default outbound allow-all rule on new SGs,
       # so explicit outbound_rules are only needed for restrictive policies.
     }
-    backend = {
-      description = "Backend security group - app traffic"
+    llm = {
+      description = "LLM security group - app traffic"
       net_id      = module.networking.net_id
       inbound_rules = [
         {
@@ -88,7 +88,7 @@ module "compute" {
       image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
       vm_type                  = "tinav5.c2r4p1"
       subnet_id                = module.networking.subnet_ids["frontend"]
-      keypair_name             = "myproject-prod-keypair"
+      keypair_name             = "outscale-compute-prod-keypair"
       security_group_keys      = ["frontend"]
       placement_subregion_name = "eu-west-2a"
       enable_public_ip         = true
@@ -97,28 +97,6 @@ module "compute" {
           device_name = "/dev/sda1"
           bsu = {
             volume_size           = 50
-            volume_type           = "gp2"
-            delete_on_vm_deletion = true
-          }
-        },
-      ]
-      tags = {
-        Tier = "frontend"
-      }
-    }
-    backend = {
-      count                    = 1
-      image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
-      vm_type                  = "tinav5.c4r8p1"
-      subnet_id                = module.networking.subnet_ids["backend"]
-      keypair_name             = "myproject-prod-keypair"
-      security_group_keys      = ["backend"]
-      placement_subregion_name = "eu-west-2a"
-      block_device_mappings = [
-        {
-          device_name = "/dev/sda1"
-          bsu = {
-            volume_size           = 100
             volume_type           = "gp2"
             delete_on_vm_deletion = true
           }
@@ -144,7 +122,48 @@ module "compute" {
         }
       }
       tags = {
-        Tier = "backend"
+        Tier = "frontend"
+      }
+    }
+    llm = {
+      count                    = 1
+      image_id                 = "ami-a4221a17" # Ubuntu 24.04 (2026-01-12)
+      vm_type                  = "tinav5.c4r12p2"
+      subnet_id                = module.networking.subnet_ids["llm"]
+      keypair_name             = "outscale-compute-prod-keypair"
+      security_group_keys      = ["llm"]
+      placement_subregion_name = "eu-west-2a"
+      block_device_mappings = [
+        # {
+        #   device_name = "/dev/sda1"
+        #   bsu = {
+        #     volume_size           = 100
+        #     volume_type           = "gp2"
+        #     delete_on_vm_deletion = true
+        #   }
+        # },
+      ]
+      volumes = {
+        # data = {
+        #   size        = 200
+        #   type        = "io1"
+        #   iops        = 3000
+        #   device_name = "/dev/xvdb"
+        #   tags = {
+        #     Purpose = "application-data"
+        #   }
+        # }
+        # logs = {
+        #   size        = 50
+        #   type        = "gp2"
+        #   device_name = "/dev/xvdc"
+        #   tags = {
+        #     Purpose = "application-logs"
+        #   }
+        # }
+      }
+      tags = {
+        Tier = "llm"
       }
     }
   }
@@ -153,10 +172,10 @@ module "compute" {
   enable_flexible_gpus = true
   flexible_gpus = {
     compute = {
-      model_name            = "nvidia-p100"
+      model_name            = "nvidia-p6"
       generation            = "v5"
       delete_on_vm_deletion = true
-      vm_role               = "backend"
+      vm_role               = "llm"
     }
   }
 }
