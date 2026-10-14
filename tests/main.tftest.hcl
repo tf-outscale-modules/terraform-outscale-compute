@@ -531,6 +531,11 @@ run "flexible_gpus_enabled" {
     condition     = outscale_flexible_gpu.this["compute:backend-0"].model_name == "nvidia-p100"
     error_message = "GPU model_name mismatch"
   }
+
+  assert {
+    condition     = outscale_flexible_gpu.this["compute:backend-0"].subregion_name == "eu-west-2a"
+    error_message = "GPU should be created in its VM's subregion"
+  }
 }
 
 # Test: Multiple GPU models targeting same role
@@ -627,5 +632,39 @@ run "deletion_protection" {
   assert {
     condition     = outscale_vm.this["db-0"].deletion_protection == true
     error_message = "Deletion protection should be enabled"
+  }
+}
+
+# Test: VM security and shutdown options are passed through
+run "vm_security_options" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      secure = {
+        count              = 1
+        image_id           = "ami-12345678"
+        vm_type            = "tinav5.c1r1p1"
+        subnet_id          = "subnet-12345678"
+        tpm_enabled        = true
+        boot_mode          = "uefi"
+        secure_boot_action = "enable"
+        shutdown_behavior_configuration = {
+          guest_action = "terminate"
+        }
+      }
+    }
+  }
+
+  assert {
+    condition     = outscale_vm.this["secure-0"].tpm_enabled == true && outscale_vm.this["secure-0"].boot_mode == "uefi" && outscale_vm.this["secure-0"].secure_boot_action == "enable"
+    error_message = "TPM/boot options not passed through"
+  }
+
+  assert {
+    condition     = outscale_vm.this["secure-0"].shutdown_behavior_configuration[0].guest_action == "terminate"
+    error_message = "shutdown_behavior_configuration not passed through"
   }
 }
