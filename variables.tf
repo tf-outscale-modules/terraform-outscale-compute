@@ -36,6 +36,13 @@ variable "vms" {
     enable_public_ip         = optional(bool, false)
     deletion_protection      = optional(bool, false)
     user_data                = optional(string)
+    tpm_enabled              = optional(bool)   # attach a virtual TPM (default depends on the OMI tpm_mandatory)
+    boot_mode                = optional(string) # uefi | legacy
+    secure_boot_action       = optional(string) # enable | disable | setup-mode | none (applied on next boot)
+    shutdown_behavior_configuration = optional(object({
+      guest_action = optional(string) # stop | terminate (API default: stop)
+      host_action  = optional(string) # restart | stop (API default: restart)
+    }))
     block_device_mappings = optional(list(object({
       device_name = string
       bsu = object({

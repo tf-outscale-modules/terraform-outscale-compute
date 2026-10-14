@@ -48,6 +48,14 @@ resource "outscale_keypair" "this" {
   keypair_name = var.keypair_name != null ? var.keypair_name : "${var.project_name}-${var.environment}-keypair"
   public_key   = var.keypair_public_key
 
+  dynamic "tags" {
+    for_each = local.common_tags
+    content {
+      key   = tags.key
+      value = tags.value
+    }
+  }
+
   lifecycle {
     precondition {
       condition     = var.keypair_public_key != null
@@ -70,6 +78,17 @@ resource "outscale_vm" "this" {
   placement_subregion_name = each.value.placement_subregion_name
   deletion_protection      = each.value.deletion_protection
   user_data                = each.value.user_data
+  tpm_enabled              = each.value.tpm_enabled
+  boot_mode                = each.value.boot_mode
+  secure_boot_action       = each.value.secure_boot_action
+
+  dynamic "shutdown_behavior_configuration" {
+    for_each = each.value.shutdown_behavior != null ? [each.value.shutdown_behavior] : []
+    content {
+      guest_action = shutdown_behavior_configuration.value.guest_action
+      host_action  = shutdown_behavior_configuration.value.host_action
+    }
+  }
 
   security_group_ids = concat(
     each.value.security_group_ids,
@@ -166,8 +185,9 @@ resource "outscale_flexible_gpu" "this" {
 
   model_name            = each.value.model_name
   generation            = each.value.generation
-  subregion_name        = each.value.subregion_name
   delete_on_vm_deletion = each.value.delete_on_vm_deletion
+  # Follow the VM: provider >= 1.8 would otherwise pick the first subregion offering the model
+  subregion_name = outscale_vm.this[each.value.vm_key].placement_subregion_name
 }
 
 resource "outscale_flexible_gpu_link" "this" {
