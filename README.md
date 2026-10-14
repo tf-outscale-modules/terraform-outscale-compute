@@ -13,8 +13,9 @@ Terraform module for provisioning and managing Outscale cloud virtual machines w
 - **Security groups** — optionally create security groups with inbound/outbound rules, referenced by key from VM definitions
 - **Block storage volumes** — attach additional volumes per VM role with automatic subregion derivation
 - **Public IPs** — per-role toggle for elastic IP allocation and association
-- **SSH keypair** — optional keypair creation with sensitive public key handling
-- **Flexible GPUs** — allocate and attach Outscale fGPUs to VMs by role, with auto-distribution across instances
+- **SSH keypair** — optional keypair creation with sensitive public key handling, tagged like other resources
+- **VM boot security** — per-role vTPM, UEFI/legacy boot mode, Secure Boot actions and shutdown behavior (`shutdown_behavior_configuration`)
+- **Flexible GPUs** — allocate and attach Outscale fGPUs to VMs by role, with auto-distribution across instances (each fGPU is created in its VM's subregion)
 - **Consistent naming** — all resources follow `{project}-{environment}-{role}-{index}` pattern
 - **Flexible tagging** — common tags merged with role-specific and resource-specific tags
 
@@ -23,7 +24,7 @@ Terraform module for provisioning and managing Outscale cloud virtual machines w
 | Name | Version |
 |------|---------|
 | terraform | >= 1.5 |
-| outscale | ~> 1.0 |
+| outscale | ~> 1.8 |
 
 ## Usage
 
@@ -175,13 +176,13 @@ See [SECURITY.md](SECURITY.md) for detailed security guidance.
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5 |
-| <a name="requirement_outscale"></a> [outscale](#requirement\_outscale) | ~> 1.0 |
+| <a name="requirement_outscale"></a> [outscale](#requirement\_outscale) | ~> 1.8 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_outscale"></a> [outscale](#provider\_outscale) | ~> 1.0 |
+| <a name="provider_outscale"></a> [outscale](#provider\_outscale) | ~> 1.8 |
 
 ## Modules
 
@@ -216,7 +217,7 @@ No modules.
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name used for resource naming and tagging. Must be lowercase alphanumeric with hyphens only | `string` | n/a | yes |
 | <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | Map of security groups to create when enable\_security\_groups is true. Keys are referenced by security\_group\_keys in VM definitions | <pre>map(object({<br/>    description = string<br/>    net_id      = string<br/>    inbound_rules = optional(list(object({<br/>      from_port_range                   = number<br/>      to_port_range                     = number<br/>      ip_protocol                       = string<br/>      ip_range                          = optional(string)<br/>      security_group_account_id_to_link = optional(string)<br/>      security_group_name_to_link       = optional(string)<br/>    })), [])<br/>    outbound_rules = optional(list(object({<br/>      from_port_range                   = number<br/>      to_port_range                     = number<br/>      ip_protocol                       = string<br/>      ip_range                          = optional(string)<br/>      security_group_account_id_to_link = optional(string)<br/>      security_group_name_to_link       = optional(string)<br/>    })), [])<br/>    tags = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags to apply to all resources | `map(string)` | `{}` | no |
-| <a name="input_vms"></a> [vms](#input\_vms) | Map of VM role definitions. Each key is a role name (e.g., 'frontend', 'backend') with its configuration including count, image, type, networking, and optional volumes | <pre>map(object({<br/>    count                    = number<br/>    image_id                 = string<br/>    vm_type                  = string<br/>    subnet_id                = string<br/>    keypair_name             = optional(string)<br/>    security_group_ids       = optional(list(string), [])<br/>    security_group_keys      = optional(list(string), [])<br/>    placement_subregion_name = optional(string)<br/>    enable_public_ip         = optional(bool, false)<br/>    deletion_protection      = optional(bool, false)<br/>    user_data                = optional(string)<br/>    block_device_mappings = optional(list(object({<br/>      device_name = string<br/>      bsu = object({<br/>        volume_size           = number<br/>        volume_type           = optional(string, "gp2")<br/>        iops                  = optional(number)<br/>        snapshot_id           = optional(string)<br/>        delete_on_vm_deletion = optional(bool, true)<br/>      })<br/>    })), [])<br/>    volumes = optional(map(object({<br/>      size           = number<br/>      type           = optional(string, "gp2")<br/>      iops           = optional(number)<br/>      snapshot_id    = optional(string)<br/>      device_name    = string<br/>      subregion_name = optional(string)<br/>      tags           = optional(map(string), {})<br/>    })), {})<br/>    tags = optional(map(string), {})<br/>  }))</pre> | n/a | yes |
+| <a name="input_vms"></a> [vms](#input\_vms) | Map of VM role definitions. Each key is a role name (e.g., 'frontend', 'backend') with its configuration including count, image, type, networking, and optional volumes | <pre>map(object({<br/>    count                    = number<br/>    image_id                 = string<br/>    vm_type                  = string<br/>    subnet_id                = string<br/>    keypair_name             = optional(string)<br/>    security_group_ids       = optional(list(string), [])<br/>    security_group_keys      = optional(list(string), [])<br/>    placement_subregion_name = optional(string)<br/>    enable_public_ip         = optional(bool, false)<br/>    deletion_protection      = optional(bool, false)<br/>    user_data                = optional(string)<br/>    tpm_enabled              = optional(bool)   # attach a virtual TPM (default depends on the OMI tpm_mandatory)<br/>    boot_mode                = optional(string) # uefi | legacy<br/>    secure_boot_action       = optional(string) # enable | disable | setup-mode | none (applied on next boot)<br/>    shutdown_behavior_configuration = optional(object({<br/>      guest_action = optional(string) # stop | terminate (API default: stop)<br/>      host_action  = optional(string) # restart | stop (API default: restart)<br/>    }))<br/>    block_device_mappings = optional(list(object({<br/>      device_name = string<br/>      bsu = object({<br/>        volume_size           = number<br/>        volume_type           = optional(string, "gp2")<br/>        iops                  = optional(number)<br/>        snapshot_id           = optional(string)<br/>        delete_on_vm_deletion = optional(bool, true)<br/>      })<br/>    })), [])<br/>    volumes = optional(map(object({<br/>      size           = number<br/>      type           = optional(string, "gp2")<br/>      iops           = optional(number)<br/>      snapshot_id    = optional(string)<br/>      device_name    = string<br/>      subregion_name = optional(string)<br/>      tags           = optional(map(string), {})<br/>    })), {})<br/>    tags = optional(map(string), {})<br/>  }))</pre> | n/a | yes |
 
 ## Outputs
 
@@ -269,7 +270,7 @@ This module is provided "as is", without warranty of any kind, express or implie
 [terraform-badge]: https://img.shields.io/badge/Terraform-%3E%3D1.5-623CE4
 [terraform-url]: https://www.terraform.io
 
-[provider-badge]: https://img.shields.io/badge/Outscale%20Provider-~%3E1.0-blueviolet
+[provider-badge]: https://img.shields.io/badge/Outscale%20Provider-~%3E1.8-blueviolet
 [provider-url]: https://registry.terraform.io/providers/outscale/outscale/latest
 
 [release-badge]: https://img.shields.io/gitlab/v/release/leminnov/terraform/modules/outscale-compute?include_prereleases&sort=semver

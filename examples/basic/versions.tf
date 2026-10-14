@@ -4,7 +4,7 @@ terraform {
   required_providers {
     outscale = {
       source  = "outscale/outscale"
-      version = "~> 1.0"
+      version = "~> 1.8"
     }
   }
 }

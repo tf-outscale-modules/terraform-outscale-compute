@@ -26,6 +26,10 @@ locals {
         enable_public_ip         = cfg.enable_public_ip
         deletion_protection      = cfg.deletion_protection
         user_data                = cfg.user_data
+        tpm_enabled              = cfg.tpm_enabled
+        boot_mode                = cfg.boot_mode
+        secure_boot_action       = cfg.secure_boot_action
+        shutdown_behavior        = cfg.shutdown_behavior_configuration
         block_device_mappings    = cfg.block_device_mappings
         tags = merge(
           local.common_tags,
@@ -113,7 +117,6 @@ locals {
         model_name            = gpu.model_name
         generation            = gpu.generation
         delete_on_vm_deletion = gpu.delete_on_vm_deletion
-        subregion_name        = vm.placement_subregion_name
         tags = merge(
           local.common_tags,
           {
