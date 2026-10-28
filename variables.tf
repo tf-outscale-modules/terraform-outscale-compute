@@ -139,7 +139,7 @@ variable "enable_flexible_gpus" {
 }
 
 variable "flexible_gpus" {
-  description = "Map of flexible GPU definitions. Each key is a GPU config name with model, generation, and target VM role. One GPU is created per VM instance in the specified role"
+  description = "Map of flexible GPU definitions. Each key is a GPU config name with model, generation, and target VM role. One GPU is created per VM instance in the specified role. The tags field is accepted but not applied, as the provider flexible GPU resource has no tags"
   type = map(object({
     model_name            = string
     generation            = optional(string)

@@ -116,6 +116,13 @@ resource "outscale_vm" "this" {
       value = tags.value
     }
   }
+
+  lifecycle {
+    precondition {
+      condition     = alltrue([for key in each.value.security_group_keys : var.enable_security_groups && contains(keys(var.security_groups), key)])
+      error_message = "security_group_keys of role ${each.value.role} references a key that is not in security_groups, or enable_security_groups is false."
+    }
+  }
 }
 
 ########################################
@@ -125,11 +132,12 @@ resource "outscale_vm" "this" {
 resource "outscale_volume" "this" {
   for_each = local.volume_instances
 
-  size           = each.value.size
-  volume_type    = each.value.type
-  iops           = each.value.iops
-  snapshot_id    = each.value.snapshot_id
-  subregion_name = each.value.subregion_name
+  size        = each.value.size
+  volume_type = each.value.type
+  iops        = each.value.iops
+  snapshot_id = each.value.snapshot_id
+  # Follow the VM when neither the volume nor the role sets a subregion
+  subregion_name = coalesce(each.value.subregion_name, outscale_vm.this[each.value.vm_key].placement_subregion_name)
 
   dynamic "tags" {
     for_each = each.value.tags

@@ -668,3 +668,90 @@ run "vm_security_options" {
     error_message = "shutdown_behavior_configuration not passed through"
   }
 }
+
+# Test: security_group_keys must reference a created group
+run "security_group_key_unknown" {
+  command = plan
+
+  variables {
+    project_name           = "testproject"
+    environment            = "dev"
+    enable_security_groups = true
+    security_groups = {
+      web = {
+        description = "web"
+        net_id      = "vpc-12345678"
+      }
+    }
+    vms = {
+      web = {
+        count               = 1
+        image_id            = "ami-12345678"
+        vm_type             = "tinav5.c1r1p1"
+        subnet_id           = "subnet-12345678"
+        security_group_keys = ["missing"]
+      }
+    }
+  }
+
+  expect_failures = [
+    outscale_vm.this,
+  ]
+}
+
+run "security_group_key_with_groups_disabled" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    security_groups = {
+      web = {
+        description = "web"
+        net_id      = "vpc-12345678"
+      }
+    }
+    vms = {
+      web = {
+        count               = 1
+        image_id            = "ami-12345678"
+        vm_type             = "tinav5.c1r1p1"
+        subnet_id           = "subnet-12345678"
+        security_group_keys = ["web"]
+      }
+    }
+  }
+
+  expect_failures = [
+    outscale_vm.this,
+  ]
+}
+
+# Test: a volume without any subregion falls back to its VM
+run "volume_without_subregion" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      db = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+        volumes = {
+          data = {
+            size        = 10
+            device_name = "/dev/xvdb"
+          }
+        }
+      }
+    }
+  }
+
+  assert {
+    condition     = length(outscale_volume.this) == 1
+    error_message = "Expected the volume to be planned without an explicit subregion"
+  }
+}
