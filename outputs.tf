@@ -33,7 +33,7 @@ output "vm_details" {
 ########################################
 
 output "security_group_ids" {
-  description = "Map of security group IDs keyed by security group name"
+  description = "Map of security group IDs keyed by the key of the security_groups variable"
   value       = { for k, v in outscale_security_group.this : k => v.security_group_id }
 }
 

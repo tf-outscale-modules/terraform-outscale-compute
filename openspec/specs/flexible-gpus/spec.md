@@ -43,3 +43,10 @@ Every `vm_role` of `flexible_gpus` SHALL be a key of `vms`. The validation SHALL
 #### Scenario: Output keys
 - **WHEN** one GPU entry `compute` targets role `backend` of count 1
 - **THEN** both outputs have the key `compute:backend-0`
+
+### Requirement: Flexible GPU tags not applied
+The `tags` field of a `flexible_gpus` entry SHALL be accepted but not applied, because the provider's flexible GPU resource has no tags; its description SHALL say so.
+
+#### Scenario: Tags on a GPU entry
+- **WHEN** an entry sets `tags = { Team = "ml" }`
+- **THEN** the plan succeeds and the flexible GPU carries no tags
