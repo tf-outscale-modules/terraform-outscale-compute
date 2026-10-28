@@ -55,7 +55,7 @@ locals {
         iops           = vol.iops
         snapshot_id    = vol.snapshot_id
         device_name    = vol.device_name
-        subregion_name = coalesce(vol.subregion_name, vm.placement_subregion_name)
+        subregion_name = vol.subregion_name != null ? vol.subregion_name : vm.placement_subregion_name
         tags = merge(
           local.common_tags,
           {
@@ -117,14 +117,6 @@ locals {
         model_name            = gpu.model_name
         generation            = gpu.generation
         delete_on_vm_deletion = gpu.delete_on_vm_deletion
-        tags = merge(
-          local.common_tags,
-          {
-            Name = "${vm.name}-fgpu-${gpu_key}"
-            Role = vm.role
-          },
-          gpu.tags,
-        )
       } if vm.role == gpu.vm_role
     }
   ]...) : {}

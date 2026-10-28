@@ -165,10 +165,10 @@ See [SECURITY.md](SECURITY.md) for detailed security guidance.
 
 ## Known Limitations
 
-1. The Outscale provider does not support `deletion_protection` as a first-class attribute on all resource types
-2. Volume IOPS configuration is only effective for `io1` volume types
-3. Security group rules with multiple IP ranges require separate rule entries
-4. Public IP association requires the VM to be in a running state
+1. Volume IOPS configuration is only effective for `io1` volume types
+2. Security group rules with multiple IP ranges require separate rule entries
+3. Public IP association requires the VM to be in a running state
+4. The `tags` field of `flexible_gpus` is not applied: the provider flexible GPU resource has no tags
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -211,7 +211,7 @@ No modules.
 | <a name="input_enable_keypair"></a> [enable\_keypair](#input\_enable\_keypair) | Enable creation of an SSH keypair | `bool` | `false` | no |
 | <a name="input_enable_security_groups"></a> [enable\_security\_groups](#input\_enable\_security\_groups) | Enable creation of security groups defined in the security\_groups variable | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment (dev, staging, or prod) | `string` | n/a | yes |
-| <a name="input_flexible_gpus"></a> [flexible\_gpus](#input\_flexible\_gpus) | Map of flexible GPU definitions. Each key is a GPU config name with model, generation, and target VM role. One GPU is created per VM instance in the specified role | <pre>map(object({<br/>    model_name            = string<br/>    generation            = optional(string)<br/>    delete_on_vm_deletion = optional(bool, true)<br/>    vm_role               = string<br/>    tags                  = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
+| <a name="input_flexible_gpus"></a> [flexible\_gpus](#input\_flexible\_gpus) | Map of flexible GPU definitions. Each key is a GPU config name with model, generation, and target VM role. One GPU is created per VM instance in the specified role. The tags field is accepted but not applied, as the provider flexible GPU resource has no tags | <pre>map(object({<br/>    model_name            = string<br/>    generation            = optional(string)<br/>    delete_on_vm_deletion = optional(bool, true)<br/>    vm_role               = string<br/>    tags                  = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_keypair_name"></a> [keypair\_name](#input\_keypair\_name) | Name for the SSH keypair (required when enable\_keypair is true) | `string` | `null` | no |
 | <a name="input_keypair_public_key"></a> [keypair\_public\_key](#input\_keypair\_public\_key) | Public key material for the SSH keypair. Provide via environment variable or tfvars, never hardcode | `string` | `null` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name used for resource naming and tagging. Must be lowercase alphanumeric with hyphens only | `string` | n/a | yes |
@@ -230,7 +230,7 @@ No modules.
 | <a name="output_keypair_name"></a> [keypair\_name](#output\_keypair\_name) | Name of the created keypair (null if keypair creation is disabled) |
 | <a name="output_public_ip_ids"></a> [public\_ip\_ids](#output\_public\_ip\_ids) | Map of public IP allocation IDs keyed by VM key |
 | <a name="output_public_ips"></a> [public\_ips](#output\_public\_ips) | Map of public IP addresses keyed by VM key |
-| <a name="output_security_group_ids"></a> [security\_group\_ids](#output\_security\_group\_ids) | Map of security group IDs keyed by security group name |
+| <a name="output_security_group_ids"></a> [security\_group\_ids](#output\_security\_group\_ids) | Map of security group IDs keyed by the key of the security\_groups variable |
 | <a name="output_vm_details"></a> [vm\_details](#output\_vm\_details) | Map of VM details including ID, private IP, public IP, state, and type |
 | <a name="output_vm_ids"></a> [vm\_ids](#output\_vm\_ids) | Map of VM IDs keyed by flattened VM key (role-index) |
 | <a name="output_vm_private_ips"></a> [vm\_private\_ips](#output\_vm\_private\_ips) | Map of VM private IPs keyed by flattened VM key |
