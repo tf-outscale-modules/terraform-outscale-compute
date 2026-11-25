@@ -15,7 +15,7 @@
 
 ## Security Groups
 
-- Security groups are created with **no default rules** — all traffic is denied until you explicitly add rules
+- Security groups are created with no inbound rules, but Outscale adds an **allow-all outbound rule** to every new group; set `remove_default_outbound_rule = true` on a group to drop it and allow only the outbound rules you declare (changing it replaces the group)
 - Avoid using `0.0.0.0/0` for SSH (port 22) or RDP (port 3389) in production
 - Use specific CIDR ranges or security group member references for inbound rules
 - Review security group rules regularly and remove unused entries

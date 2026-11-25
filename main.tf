@@ -9,6 +9,8 @@ resource "outscale_security_group" "this" {
   security_group_name = "${var.project_name}-${var.environment}-${each.key}"
   net_id              = each.value.net_id
 
+  remove_default_outbound_rule = each.value.remove_default_outbound_rule
+
   dynamic "tags" {
     for_each = merge(
       local.common_tags,
@@ -81,6 +83,7 @@ resource "outscale_vm" "this" {
   tpm_enabled              = each.value.tpm_enabled
   boot_mode                = each.value.boot_mode
   secure_boot_action       = each.value.secure_boot_action
+  is_source_dest_checked   = each.value.is_source_dest_checked
 
   dynamic "shutdown_behavior_configuration" {
     for_each = each.value.shutdown_behavior != null ? [each.value.shutdown_behavior] : []
@@ -136,6 +139,8 @@ resource "outscale_volume" "this" {
   volume_type = each.value.type
   iops        = each.value.iops
   snapshot_id = each.value.snapshot_id
+
+  termination_snapshot_name = each.value.termination_snapshot_name
   # Follow the VM when neither the volume nor the role sets a subregion
   subregion_name = coalesce(each.value.subregion_name, outscale_vm.this[each.value.vm_key].placement_subregion_name)
 
