@@ -64,8 +64,17 @@ module "compute" {
           ip_range        = "0.0.0.0/0"
         },
       ]
-      # Note: Outscale auto-creates a default outbound allow-all rule on new SGs,
-      # so explicit outbound_rules are only needed for restrictive policies.
+      # Outscale adds an allow-all outbound rule to new groups. Dropping it makes the
+      # outbound_rules below the only egress allowed (replaces an existing group).
+      remove_default_outbound_rule = true
+      outbound_rules = [
+        {
+          from_port_range = 443
+          to_port_range   = 443
+          ip_protocol     = "tcp"
+          ip_range        = "0.0.0.0/0"
+        },
+      ]
     }
     llm = {
       description = "LLM security group - app traffic"
@@ -92,6 +101,7 @@ module "compute" {
       security_group_keys      = ["frontend"]
       placement_subregion_name = "eu-west-2a"
       enable_public_ip         = true
+      is_source_dest_checked   = true # explicit; set false only for NAT/router/firewall VMs
       block_device_mappings = [
         {
           device_name = "/dev/sda1"
@@ -108,6 +118,8 @@ module "compute" {
           type        = "io1"
           iops        = 3000
           device_name = "/dev/xvdb"
+          # keep a final snapshot when the volume is destroyed
+          termination_snapshot_name = "outscale-compute-prod-frontend-data-final"
           tags = {
             Purpose = "application-data"
           }
