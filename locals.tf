@@ -29,6 +29,7 @@ locals {
         tpm_enabled              = cfg.tpm_enabled
         boot_mode                = cfg.boot_mode
         secure_boot_action       = cfg.secure_boot_action
+        is_source_dest_checked   = cfg.is_source_dest_checked
         shutdown_behavior        = cfg.shutdown_behavior_configuration
         block_device_mappings    = cfg.block_device_mappings
         tags = merge(
@@ -56,6 +57,8 @@ locals {
         snapshot_id    = vol.snapshot_id
         device_name    = vol.device_name
         subregion_name = vol.subregion_name != null ? vol.subregion_name : vm.placement_subregion_name
+
+        termination_snapshot_name = vol.termination_snapshot_name
         tags = merge(
           local.common_tags,
           {

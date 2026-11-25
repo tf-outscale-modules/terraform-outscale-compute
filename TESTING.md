@@ -36,6 +36,9 @@ tofu test -verbose
 | `tags_propagation` | Verifies common, custom, and role tags are all merged |
 | `block_device_mappings` | Exercises block device mapping configuration |
 | `deletion_protection` | Verifies deletion protection flag is passed through |
+| `security_group_remove_default_outbound_rule` | Opt-in removal of the default outbound rule, with and without explicit outbound rules, and unchanged when omitted |
+| `volume_termination_snapshot` | Termination snapshot name planned on every volume of the entry, omitted otherwise |
+| `vm_source_dest_check` | `is_source_dest_checked` planned when set; a role that omits it is still planned (server-computed) |
 
 ## CI Integration
 

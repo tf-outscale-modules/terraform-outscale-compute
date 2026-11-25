@@ -755,3 +755,136 @@ run "volume_without_subregion" {
     error_message = "Expected the volume to be planned without an explicit subregion"
   }
 }
+
+# Test: remove_default_outbound_rule is opt-in per security group
+run "security_group_remove_default_outbound_rule" {
+  command = plan
+
+  variables {
+    project_name           = "testproject"
+    environment            = "dev"
+    enable_security_groups = true
+    security_groups = {
+      strict = {
+        description                  = "No default egress, one explicit rule"
+        net_id                       = "net-12345678"
+        remove_default_outbound_rule = true
+        outbound_rules = [
+          {
+            from_port_range = 443
+            to_port_range   = 443
+            ip_protocol     = "tcp"
+            ip_range        = "0.0.0.0/0"
+          },
+        ]
+      }
+      isolated = {
+        description                  = "No egress at all"
+        net_id                       = "net-12345678"
+        remove_default_outbound_rule = true
+      }
+      legacy = {
+        description = "Default behaviour"
+        net_id      = "net-12345678"
+      }
+    }
+    vms = {
+      app = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  assert {
+    condition     = outscale_security_group.this["strict"].remove_default_outbound_rule == true && outscale_security_group.this["isolated"].remove_default_outbound_rule == true
+    error_message = "remove_default_outbound_rule not passed through"
+  }
+
+  assert {
+    condition     = outscale_security_group.this["legacy"].remove_default_outbound_rule != true
+    error_message = "Omitted remove_default_outbound_rule must keep the provider default"
+  }
+
+  assert {
+    condition     = length(outscale_security_group_rule.this) == 1 && contains(keys(outscale_security_group_rule.this), "strict:outbound:0")
+    error_message = "Only the explicit outbound rule of the strict group is expected"
+  }
+}
+
+# Test: termination_snapshot_name is opt-in per volume
+run "volume_termination_snapshot" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      db = {
+        count                    = 2
+        image_id                 = "ami-12345678"
+        vm_type                  = "tinav5.c1r1p1"
+        subnet_id                = "subnet-12345678"
+        placement_subregion_name = "eu-west-2a"
+        volumes = {
+          data = {
+            size                      = 100
+            device_name               = "/dev/xvdb"
+            termination_snapshot_name = "db-data-final"
+          }
+          logs = {
+            size        = 50
+            device_name = "/dev/xvdc"
+          }
+        }
+      }
+    }
+  }
+
+  assert {
+    condition     = outscale_volume.this["db-0:data"].termination_snapshot_name == "db-data-final" && outscale_volume.this["db-1:data"].termination_snapshot_name == "db-data-final"
+    error_message = "termination_snapshot_name not passed through"
+  }
+
+  assert {
+    condition     = outscale_volume.this["db-0:logs"].termination_snapshot_name == null
+    error_message = "Omitted termination_snapshot_name must stay unset"
+  }
+}
+
+# Test: is_source_dest_checked is opt-in per role
+run "vm_source_dest_check" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      router = {
+        count                  = 1
+        image_id               = "ami-12345678"
+        vm_type                = "tinav5.c1r1p1"
+        subnet_id              = "subnet-12345678"
+        is_source_dest_checked = false
+      }
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  assert {
+    condition     = outscale_vm.this["router-0"].is_source_dest_checked == false
+    error_message = "is_source_dest_checked not passed through"
+  }
+
+  assert {
+    condition     = length(outscale_vm.this) == 2
+    error_message = "A role that omits is_source_dest_checked must still be planned (value is server-computed, so unknown in a plan)"
+  }
+}

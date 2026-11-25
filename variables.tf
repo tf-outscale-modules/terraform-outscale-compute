@@ -39,6 +39,7 @@ variable "vms" {
     tpm_enabled              = optional(bool)   # attach a virtual TPM (default depends on the OMI tpm_mandatory)
     boot_mode                = optional(string) # uefi | legacy
     secure_boot_action       = optional(string) # enable | disable | setup-mode | none (applied on next boot)
+    is_source_dest_checked   = optional(bool)   # false lets the VM forward traffic not addressed to it (NAT, router, firewall); null keeps the API default
     shutdown_behavior_configuration = optional(object({
       guest_action = optional(string) # stop | terminate (API default: stop)
       host_action  = optional(string) # restart | stop (API default: restart)
@@ -60,7 +61,9 @@ variable "vms" {
       snapshot_id    = optional(string)
       device_name    = string
       subregion_name = optional(string)
-      tags           = optional(map(string), {})
+      # name of the snapshot taken when the volume is destroyed; it outlives the volume and Terraform state
+      termination_snapshot_name = optional(string)
+      tags                      = optional(map(string), {})
     })), {})
     tags = optional(map(string), {})
   }))
@@ -92,6 +95,8 @@ variable "security_groups" {
   type = map(object({
     description = string
     net_id      = string
+    # true drops the allow-all outbound rule Outscale adds to new groups (only outbound_rules apply); changing it replaces the group, which fails while the group is the only one of a VM
+    remove_default_outbound_rule = optional(bool)
     inbound_rules = optional(list(object({
       from_port_range                   = number
       to_port_range                     = number
