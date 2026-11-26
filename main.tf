@@ -93,10 +93,11 @@ resource "outscale_vm" "this" {
     }
   }
 
-  security_group_ids = concat(
+  # null when the role lists no group: Outscale attaches the Net's default group and an empty list would fight it.
+  security_group_ids = each.value.has_security_groups ? concat(
     each.value.security_group_ids,
     [for key in each.value.security_group_keys : outscale_security_group.this[key].security_group_id],
-  )
+  ) : null
 
   dynamic "block_device_mappings" {
     for_each = each.value.block_device_mappings
