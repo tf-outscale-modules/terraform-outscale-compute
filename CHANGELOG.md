@@ -2,7 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.3.0] - 2026-11-25
+## [1.3.1] - 2026-11-26
+- Fix the perpetual diff on VMs that list no security group
+
+A role with neither security_group_ids nor security_group_keys sent an empty security_group_ids list; Outscale attaches the Net's default security group, so every later plan tried to remove it. The module now omits the argument in that case and the server-assigned group is kept. Roles that list groups are unchanged. Verified on a real account: second plan empty, where v1.3.0 planned an in-place update.
 - Add opt-in security group egress removal, volume termination snapshot and VM source/destination check options
 
 Three optional attributes, all null by default and omitted when unset, so
