@@ -669,6 +669,53 @@ run "vm_security_options" {
   }
 }
 
+# Test: a role without security groups leaves the attachment to Outscale (no empty list sent)
+run "vm_without_security_groups" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      web = {
+        count     = 1
+        image_id  = "ami-12345678"
+        vm_type   = "tinav5.c1r1p1"
+        subnet_id = "subnet-12345678"
+      }
+    }
+  }
+
+  assert {
+    condition     = local.vm_instances["web-0"].has_security_groups == false
+    error_message = "A role without security groups must not send security_group_ids"
+  }
+}
+
+# Test: a role listing security groups is attached to exactly those groups
+run "vm_with_security_group_ids" {
+  command = plan
+
+  variables {
+    project_name = "testproject"
+    environment  = "dev"
+    vms = {
+      web = {
+        count              = 1
+        image_id           = "ami-12345678"
+        vm_type            = "tinav5.c1r1p1"
+        subnet_id          = "subnet-12345678"
+        security_group_ids = ["sg-12345678", "sg-87654321"]
+      }
+    }
+  }
+
+  assert {
+    condition     = local.vm_instances["web-0"].has_security_groups && toset(outscale_vm.this["web-0"].security_group_ids) == toset(["sg-12345678", "sg-87654321"])
+    error_message = "VM must be attached to exactly the listed security groups"
+  }
+}
+
 # Test: security_group_keys must reference a created group
 run "security_group_key_unknown" {
   command = plan

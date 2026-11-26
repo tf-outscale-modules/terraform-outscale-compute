@@ -22,6 +22,7 @@ locals {
         keypair_name             = cfg.keypair_name
         security_group_ids       = cfg.security_group_ids
         security_group_keys      = cfg.security_group_keys
+        has_security_groups      = length(cfg.security_group_ids) + length(cfg.security_group_keys) > 0
         placement_subregion_name = cfg.placement_subregion_name
         enable_public_ip         = cfg.enable_public_ip
         deletion_protection      = cfg.deletion_protection
