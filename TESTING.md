@@ -39,6 +39,8 @@ tofu test -verbose
 | `security_group_remove_default_outbound_rule` | Opt-in removal of the default outbound rule, with and without explicit outbound rules, and unchanged when omitted |
 | `volume_termination_snapshot` | Termination snapshot name planned on every volume of the entry, omitted otherwise |
 | `vm_source_dest_check` | `is_source_dest_checked` planned when set; a role that omits it is still planned (server-computed) |
+| `vm_without_security_groups` | A role with no security group sends no `security_group_ids` (Outscale keeps the Net's default group) |
+| `vm_with_security_group_ids` | A role listing security group ids is attached to exactly those groups |
 
 ## CI Integration
 

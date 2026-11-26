@@ -30,8 +30,8 @@ variable "vms" {
     vm_type                  = string
     subnet_id                = string
     keypair_name             = optional(string)
-    security_group_ids       = optional(list(string), [])
-    security_group_keys      = optional(list(string), [])
+    security_group_ids       = optional(list(string), []) # both lists empty: the VM keeps the Net's default security group
+    security_group_keys      = optional(list(string), []) # removing the last listed group keeps it: list its replacement instead
     placement_subregion_name = optional(string)
     enable_public_ip         = optional(bool, false)
     deletion_protection      = optional(bool, false)
